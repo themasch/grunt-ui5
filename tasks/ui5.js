@@ -94,7 +94,7 @@ module.exports = function(grunt) {
 
         var libs = options.libraries;
         var modPostfix = '.library-preload';
-        var wrap =  'jQuery.sap.registerPreloadedModules(JSON_CONTENT)';
+        var wrap =  'JSON_CONTENT';
         var fileName = 'library-preload.json';
         createPreloadFile(grunt, libs, modPostfix, wrap, fileName, options.config);
 
