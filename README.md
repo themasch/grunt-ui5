@@ -1,6 +1,6 @@
 # grunt-ui5
 
-> Tasks around the OpenUI5/SAPUI5 framework.
+> Tasks around the [OpenUI5](https://github.com/sap/openui5)/SAPUI5 framework.
 
 ## Getting Started
 This plugin requires Grunt `~0.4.5`
@@ -17,10 +17,10 @@ Once the plugin has been installed, it may be enabled inside your Gruntfile with
 grunt.loadNpmTasks('grunt-ui5');
 ```
 
-## The "ui5" task
+## The "ui5" tasks
 
 ### Overview
-In your project's Gruntfile, add a section named `ui5` to the data object passed into `grunt.initConfig()`.
+In your project's Gruntfile, add a section named `ui5-component-preload` or `ui5-library-preload` to the data object passed into `grunt.initConfig()`.
 
 ```js
 grunt.initConfig({
