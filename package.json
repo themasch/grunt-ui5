@@ -1,0 +1,45 @@
+{
+  "name": "grunt-ui5",
+  "description": "Tasks around the OpenUI5/SAPUI5 framework.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/themasch/grunt-ui5",
+  "author": {
+    "name": "Mark Schmale",
+    "email": "m.schmale@uniorg.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/themasch/grunt-ui5.git"
+  },
+  "bugs": {
+    "url": "https://github.com/themasch/grunt-ui5/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/themasch/grunt-ui5/blob/master/LICENSE-MIT"
+    }
+  ],
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "devDependencies": {
+    "grunt-contrib-jshint": "^0.9.2",
+    "grunt-contrib-clean": "^0.5.0",
+    "grunt-contrib-nodeunit": "^0.3.3",
+    "grunt": "~0.4.5"
+  },
+  "peerDependencies": {
+    "grunt": "~0.4.5"
+  },
+  "dependencies": {
+    "uglify-js": "^2.4",
+    "maxmin": "^0.2"
+  },
+  "keywords": [
+    "gruntplugin"
+  ]
+}
