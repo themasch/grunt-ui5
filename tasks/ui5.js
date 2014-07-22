@@ -25,15 +25,39 @@ function combinePreload(basePath, name, config, grunt) {
         var raw = content = grunt.file.read(fullPath + name);
         if(config.minify && name.match(/xml$/)) {
             content = config.preserveComments
-                        ? content
-                        : content.replace(/\<![ \r\n\t]*(--([^\-]|[\r\n]|-[^\-])*--[ \r\n\t]*)\>/g,"");
-            content = content.replace(/>\s*</g, '><')
+                ? content
+                : content.replace(/\<![ \r\n\t]*(--([^\-]|[\r\n]|-[^\-])*--[ \r\n\t]*)\>/g,"");
+            content = content.replace(/>\s*</g, '><');
             content = config.relentlessXml
-                        ? content.replace(/\s+/g, '')
-                        : content
+                ? content.replace(/\s+/g, '')
+                : content
         }
         else if(config.minify && name.match(/js$/)) {
-            content = uglify.minify(fullPath + name).code;
+
+            if(config.sourceMaps) {
+                var ast = uglify.parse(grunt.file.read(fullPath + name), {
+                    filename: name,
+                    toplevel: ast
+                });
+                ast.figure_out_scope();
+                var compressor = uglify.Compressor({ });
+                var mini_ast = ast.transform(compressor);
+                var source_map = uglify.SourceMap({
+                    root: '/' + path
+                });
+                mini_ast.figure_out_scope();
+                mini_ast.compute_char_frequency();
+                mini_ast.mangle_names();
+                var stream = uglify.OutputStream({
+                    source_map: source_map
+                });
+                mini_ast.print(stream);
+                content = stream.toString() + '\n//# sourceMappingURL=' + filePath.replace(/js$/, 'map');
+                grunt.file.write(fullPath + name.replace(/js$/, 'map'), source_map.toString())
+            }
+            else {
+                content = uglify.minify(fullPath + name ).code;
+            }
         }
         else {
             content = grunt.file.read(fullPath + name);
@@ -54,7 +78,8 @@ function createPreloadFile(grunt, libs, postfix, wrapper, resultName, config) {
         var jsonData = {
             version: libdef.version || "2.0.1",     // version >= 2.0.0 because sapui breaks filename for version < 2.0.0
             name: libdef.name + postfix,
-            modules: modules
+            modules: modules,
+            url: ''
         };
 
         var sources  = wrapper.replace('JSON_CONTENT', JSON.stringify(jsonData));
