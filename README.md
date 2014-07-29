@@ -20,26 +20,18 @@ grunt.loadNpmTasks('grunt-ui5');
 ## The "ui5" tasks
 
 ### Overview
-In your project's Gruntfile, add a section named `ui5-component-preload` or `ui5-library-preload` to the data object passed into `grunt.initConfig()`.
+In your project's Gruntfile, add a section named `ui5preload` to the data object passed into `grunt.initConfig()`.
 
 ```js
 grunt.initConfig({
-    "ui5-component-preload": {
+    ui5preload: {
         default: {
             options: {
             },
-            components: [
+            paths: [
             ]
         }
-    },
-    "ui5-library-preload": {
-        default: {
-            options: {
-            },
-            libraries: [
-            ]
-        }
-    },
+    }
 });
 ```
 
@@ -61,32 +53,24 @@ A flag to decide if comments should be preserved in XML files.
 
 ```js
 grunt.initConfig({
-    "ui5-component-preload": {
-        default: {
-            components: [
-                {
-                    basePath: "public/",
-                    name: "our.pretty.uicomponent"
-                }
-            ]
-        }
-    },
-    "ui5-library-preload": {
+    ui5preload: {
         default: {
             options: {
                 minify: true, 
                 preserveComments: true,  // default false
             },
-            libraries: [
+            paths: [
                 {
                     basePath: "public/",
-                    name: "my.cool.library",
-                    version: "3.4.5" // default 2.0.1
+                    name: "our.pretty.uicomponent"
                 },
                 {
                     basePath: "public/",
-                    name: "my.cooler.control",
-                    version: "4.2.0" // default 2.0.1
+                    name: "my.cool.library"
+                },
+                {
+                    basePath: "public/",
+                    name: "my.cooler.control"
                 }
             ]
         }
@@ -97,14 +81,17 @@ grunt.initConfig({
 
 
 ## Contributing
+
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
 
+ - 0.2.0 improved configuration by automatic library type detection
  - 0.1.0 initial release. 
+ 
  
 ## TODO
 
  - unit tests 
- - merge preload tasks into one clever task that recognizes if its a component or a library and generates the correct output. 
-   Both results are pretty similar. Should be possible to do this. 
+ - source maps
+ - include additional directories/files (like sap.ui.core does)
