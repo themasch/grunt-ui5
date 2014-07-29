@@ -2,7 +2,7 @@
  * grunt-ui5
  * https://github.com/themasch/grunt-ui5
  *
- * Copyright (c) 2014 Mark Schmale
+ * Copyright (c) 2014 UNIORG Solutions GmbH
  * Licensed under the MIT license.
  */
 
@@ -12,92 +12,108 @@ var uglify = require('uglify-js'),
     maxmin = require('maxmin');
 
 
-function combinePreload(basePath, name, config, grunt) {
-    var path = name.replace(/\./g, '/');
+function ui5grunt(grunt) {
+    this.g = grunt;
+}
+
+ui5grunt.prototype.compressFile = function(path, fullPath, config, modules, name) {
+    var filePath = (path + '/' + name).replace(/\/{2,}/g, '/');
+    var content;
+    var raw = content = this.g.file.read(fullPath + name);
+    if(config.minify && name.match(/xml$/)) {
+        content = config.preserveComments
+            ? content
+            : content.replace(/\<![ \r\n\t]*(--([^\-]|[\r\n]|-[^\-])*--[ \r\n\t]*)\>/g,"");
+        content = content.replace(/>\s*</g, '><')
+        content = config.relentlessXml
+            ? content.replace(/\s+/g, '')
+            : content
+    }
+    else if(config.minify && name.match(/js$/)) {
+        content = uglify.minify(fullPath + name).code;
+    }
+    else {
+        content = this.g.file.read(fullPath + name);
+    }
+
+    this.g.verbose.writeln(filePath + ': ', maxmin(raw, content, true));
+
+    modules[filePath] = content;
+};
+
+ui5grunt.prototype.combinePreload = function(basePath, libName, config, grunt) {
+    var path = libName.replace(/\./g, '/');
     var fullPath = './' + basePath + '/' + path + '/';
-    var files = grunt.file.expand({ matchBase: true, cwd: fullPath }, [ '*.js', '*.view.*', '!component-preload.js' ]);
+    var files = this.g.file.expand({ matchBase: true, cwd: fullPath }, [ '*.js', '*.view.*', '!component-preload.js' ]);
 
     var modules = {};
 
-    files.map(function(name) {
-        var filePath = (path + '/' + name).replace(/\/{2,}/g, '/');
-        var content;
-        var raw = content = grunt.file.read(fullPath + name);
-        if(config.minify && name.match(/xml$/)) {
-            content = config.preserveComments
-                        ? content
-                        : content.replace(/\<![ \r\n\t]*(--([^\-]|[\r\n]|-[^\-])*--[ \r\n\t]*)\>/g,"");
-            content = content.replace(/>\s*</g, '><')
-            content = config.relentlessXml
-                        ? content.replace(/\s+/g, '')
-                        : content
-        }
-        else if(config.minify && name.match(/js$/)) {
-            content = uglify.minify(fullPath + name).code;
-        }
-        else {
-            content = grunt.file.read(fullPath + name);
-        }
-
-        grunt.verbose.writeln(filePath + ': ', maxmin(raw, content, true));
-
-        modules[filePath] = content;
-    });
+    files.map(compressFile.bind(this, path, fullPath, config, modules));
 
     return modules;
-}
+};
 
-function createPreloadFile(grunt, libs, postfix, wrapper, resultName, config) {
-    return libs.map(function(libdef) {
-        var modules = combinePreload(libdef.basePath, libdef.name, config, grunt);
+ui5grunt.prototype.getLibraryInfo = function(fullPath) {
+    var files = this.g.file.expand({ matchBase: true, cwd: fullPath }, [ 'library.js', 'Component.js' ]);
 
-        var jsonData = {
-            version: libdef.version || "2.0.1",     // version >= 2.0.0 because sapui breaks filename for version < 2.0.0
-            name: libdef.name + postfix,
-            modules: modules
-        };
+    if(files.length > 1) {
+        this.g.log.writeln("we found more then one library definition: ", files);
+        return;
+    }
 
-        var sources  = wrapper.replace('JSON_CONTENT', JSON.stringify(jsonData));
+    if(files.length === 0) {
+        this.g.log.writeln("we found no library definition: ", files);
+        return;
+    }
 
-        var path = libdef.name.replace(/\./g, '/');
-        var fullPath = './' + libdef.basePath + '/' + path + '/';
+    //todo: read dependencies from library.js/component.js
 
-        grunt.file.write(fullPath + resultName, sources);
-        grunt.log.writeln('updated/created ' +libdef.name + postfix)
-    })
-}
+    var isComponent = files[0] === 'Component.js';
 
+    return isComponent ? {
+        type: 'component',
+        postfix: '.Component-preload',
+        wrap: 'jQuery.sap.registerPreloadedModules(JSON_CONTENT);',
+        filename: 'component-preload.js'
+    } : {
+        type: 'library',
+        postfix: '.library-preload',
+        wrap: 'JSON_CONTENT',
+        filename: 'library-preload.json'
+    };
+
+};
+
+ui5grunt.prototype.createPreloadFile = function(config, libdef)  {
+
+    var path = libdef.name.replace(/\./g, '/');
+    var fullPath = './' + libdef.basePath + '/' + path + '/';
+
+    var info    = this.getLibraryInfo(fullPath);
+    if(!info) {
+        return;
+    }
+    var modules = this.combinePreload(libdef.basePath, libdef.name, config);
+
+    var jsonData = {
+        version: libdef.version || "2.0",     // version >= 2.0.0 because sapui breaks filename for version < 2.0.0
+        name: libdef.name + info.postfix,
+        modules: modules
+    };
+
+    var sources  = info.wrap.replace('JSON_CONTENT', JSON.stringify(jsonData));
+
+    this.g.file.write(fullPath + info.filename, sources);
+    this.g.log.writeln('updated/created ' +libdef.name + info.postfix)
+};
 
 module.exports = function(grunt) {
 
-    grunt.registerMultiTask('ui5-component-preload', 'Generate a component-preload.js file for UI5 Components.', function() {
+    var ui5 = new ui5grunt(grunt);
 
-        var options = {
-            components: this.data.components || [],
-            config: this.options({ minify: true, preserveComments: false })
-        };
-
-        var libs = options.components;
-        var modPostfix = '.Component-preload';
-        var wrap =  'jQuery.sap.registerPreloadedModules(JSON_CONTENT)';
-        var fileName = 'component-preload.js';
-        createPreloadFile(grunt, libs, modPostfix, wrap, fileName, options.config);
-
-    });
-
-    grunt.registerMultiTask('ui5-library-preload', 'Generate a library-preload.js file for UI5 Components.', function() {
-
-        var options = {
-            libraries: this.data.libraries || [],
-            config: this.options({ minify: true, preserveComments: false })
-        };
-
-        var libs = options.libraries;
-        var modPostfix = '.library-preload';
-        var wrap =  'JSON_CONTENT';
-        var fileName = 'library-preload.json';
-        createPreloadFile(grunt, libs, modPostfix, wrap, fileName, options.config);
-
+    grunt.registerMultiTask('ui5preload', 'Generates *-preload.js files for UI5 Components and libraries.', function() {
+        var config = this.options({ minify: true, preserveComments: false });
+        this.data.paths.map(ui5.createPreloadFile.bind(ui5, config));
     });
 
 };
