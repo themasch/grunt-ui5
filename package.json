@@ -1,7 +1,7 @@
 {
   "name": "grunt-ui5",
   "description": "Tasks around the OpenUI5/SAPUI5 framework.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "homepage": "https://github.com/themasch/grunt-ui5",
   "author": {
     "name": "Mark Schmale",

@@ -2,7 +2,7 @@
  * grunt-ui5
  * https://github.com/themasch/grunt-ui5
  *
- * Copyright (c) 2014 Mark Schmale
+ * Copyright (c) 2014 UNIORG Solutions GmbH
  * Licensed under the MIT license.
  */
 
